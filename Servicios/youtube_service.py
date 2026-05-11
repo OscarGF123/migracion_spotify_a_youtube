@@ -2,7 +2,9 @@ import pickle
 import os
 import requests
 
-from googleapiclient._apis.youtube.v3 import YouTubeResource
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from googleapiclient._apis.youtube.v3 import YouTubeResource
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
@@ -10,7 +12,7 @@ SCOPES = ["https://www.googleapis.com/auth/youtube"]
 
 class Youtube:
 
-    def autenticar_youtube(self):
+    def autenticar_youtube(self) -> "YouTubeResource":
         creds = None
 
         # Reutilizar token si ya existe
@@ -19,8 +21,13 @@ class Youtube:
                 creds = pickle.load(token)
 
         if not creds or not creds.valid:
+            cliente_json = None
+            if os.path.exists("client_secret_1058694267118-fiaf0nugnl27h4qth1k1pp662am87mvm.apps.googleusercontent.com.json"):
+                cliente_json = "client_secret_1058694267118-fiaf0nugnl27h4qth1k1pp662am87mvm.apps.googleusercontent.com.json"
+            else:
+                cliente_json = "client_secret_1058694267118-i2gujo33en6e0t53gf625bnl4ofsb7s9.apps.googleusercontent.com.json"
             flow = InstalledAppFlow.from_client_secrets_file(
-                "client_secret_1058694267118-fiaf0nugnl27h4qth1k1pp662am87mvm.apps.googleusercontent.com.json",  # ← descargado de Google Cloud Console
+                cliente_json,  # ← descargado de Google Cloud Console
                 SCOPES
             )
             creds = flow.run_local_server(port=8888)  # abre el navegador para autorizar
@@ -30,43 +37,28 @@ class Youtube:
 
         return build("youtube", "v3", credentials=creds)
     
-    def buscar_en_youtube(self, track_spotify: dict, youtube_api_key: str) -> dict:
+    def buscar_en_youtube(self, track_spotify: dict, youtube_api_key: "YouTubeResource") -> dict:
         # 1. Extraer metadata de Spotify
         nombre = track_spotify['name']
-        artista = track_spotify['artists'][0]['name']
+        artista = track_spotify['artist']
         query = f"{nombre} {artista}"
 
-        # 2. Buscar en YouTube Data API v3
-        url = "https://www.googleapis.com/youtube/v3/search"
-        params = {
-            "part": "snippet",
-            "q": query,
-            "type": "video",
-            "maxResults": 1,
-            "key": youtube_api_key
-        }
+        request = youtube_api_key.search().list(
+            part='snippet',
+            q=query,
+            type='video',
+            maxResults=1
+        )
 
-        response = requests.get(url, params=params)
-        data = response.json()
+        response = request.execute()
 
-        if not data.get('items'):
-            print(data)
-            return {"encontrado": False}
+        return response
 
-        video = data['items'][0]
-        video_id = video['id']['videoId']
-
-        return {
-            "encontrado": True,
-            "titulo": video['snippet']['title'],
-            "url": f"https://www.youtube.com/watch?v={video_id}",
-            "video_id": video_id
-        }
     
-    def insertar_cancion(self, youtube_api: YouTubeResource):
+    def insertar_cancion(self, youtube_api: "YouTubeResource"):
         if not youtube_api:
             return None
-        request: YouTubeResource = youtube_api.playlistItems().insert(
+        request: "YouTubeResource" = youtube_api.playlistItems().insert(
             part='snippet',
             body={
                 'snippet':{

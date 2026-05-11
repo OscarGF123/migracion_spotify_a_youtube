@@ -3,7 +3,7 @@ import base64
 import secrets
 import requests
 from urllib.parse import urlencode
-
+from flask import current_app, jsonify, session
 # Solo para el api de spotify
 def get_headers(token):
     return {
@@ -32,7 +32,7 @@ class Spotify:
             'client_id': self.client_id,
             'response_type': 'code',
             'redirect_uri': self.redirect_url,
-            'scope': 'playlist-read-private',
+            'scope': 'playlist-read-private%20user-library-read',
             'code_challenge_method': 'S256',
             'code_challenge': code_challenge
         }
@@ -41,7 +41,7 @@ class Spotify:
 
         return auth_url
 
-    def obtener_token(self,code: str, code_verifier: str):
+    def obtener_token(self, code: str, code_verifier: str):
         url = f"{self.accounts_url}/api/token"
         payload = {
             "client_id": self.client_id,
@@ -52,14 +52,76 @@ class Spotify:
         }
 
         return requests.post(url=url, data=payload).json()
+    
+
+
+
 
     def obtener_playlist_usuario(self, token: str):
         if not token:
             return None
+        
+        url="https://api.spotify.com/v1/me/playlists"
+        response = requests.get(url, headers=get_headers(token)).json()
 
-        return requests.get(url="https://api.spotify.com/v1/me/playlists", headers=get_headers(token)).json()
+        if response.get('items', None):
+            current_app.logger.info("Se han recuperado las playlist del api correctamente")
+        
+        else:
+            current_app.logger.error(f"No se ha podido recopilar las playlist {response}")
+            return jsonify({'error': 'spotify_api', 'message': f'No se ha podido playlist las playlist {response}'})
+        
+        current_app.logger.info(f"Recopilando ids e imagenes de las playlists")
+
+        playlists = {}
+
+        for item in response.get('items'):
+            playlists[item['name']] = {
+                'id': item['id'],
+                'images': item['images']
+            }
+        current_app.logger.info(f"¡Recopilacion de plalist lista! ")
+
+        return playlists
     
-    def obtener_items_playlist(self, token):
-        url = "https://api.spotify.com/v1/playlists/3a9t7dhAorFCf9eGaSHXn1/items"
-        return requests.get(url=url, headers=get_headers(token)).json()
+    def obtener_tracks_guardados(self, token: str):
+        url = "https://api.spotify.com/v1/me/tracks"
+        tracks = []
+        params = {
+            'limit': '50'
+        }
+        current_app.logger.info("Recopilando canciones guardadas...")
+        while url:
+            response = requests.get(url, headers=get_headers(token), params=params).json()
+            for item in response.get('items', []):
+                tracks.insert(0, {
+                    'trackName': item['track'].get('name'),
+                    'artist': item['track']['artists'][0].get('name'),
+                    'added_at': item.get("added_at")
+                })
+            url = response.get('next')
+        return tracks
+
+    
+    def obtener_items_playlist(self, token: str, playlist_id: str):
+        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/items"
+        params = {
+            'limit': '50'
+        }
+        tracks = []
+
+        while url:
+            response = requests.get(url=url, headers=get_headers(token), params=params).json()
+
+            for item in response.get('items', []):
+                tracks.append({
+                    'name': item['item'].get('name'),
+                    'artist': item['item']['artists'][0].get('name'),
+                    'added_at': item.get('added_at'),
+                    'id': item['item'].get('id')
+                })
+            url = response.get('next')
+        return tracks
+
+
         
