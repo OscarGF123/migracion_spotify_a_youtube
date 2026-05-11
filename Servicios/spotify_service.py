@@ -50,9 +50,7 @@ class Spotify:
             "redirect_uri": self.redirect_url,
             "code_verifier": code_verifier,
         }
-        # headers = {
-        #         'Content-Type': 'application/x-www-form-urlencoded',
-        #     }
+
         return requests.post(url=url, data=payload).json()
 
     def obtener_playlist_usuario(self, token: str):

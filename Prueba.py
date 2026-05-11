@@ -85,7 +85,7 @@ def autenticar_youtube():
 
     if not creds or not creds.valid:
         flow = InstalledAppFlow.from_client_secrets_file(
-            "client_secret_1058694267118-v6fb98hep04qov3u5c9ll3kbd34ab5c8.apps.googleusercontent.com.json",  # ← descargado de Google Cloud Console
+            "client_secret_1058694267118-fiaf0nugnl27h4qth1k1pp662am87mvm.apps.googleusercontent.com.json",  # ← descargado de Google Cloud Console
             SCOPES
         )
         creds = flow.run_local_server(port=8888)  # abre el navegador para autorizar
