@@ -80,25 +80,33 @@ def callback():
 @endpoints_bp.route('/migracion_canciones')
 @validar_token_spotify
 def iniciar_migraciones():
-    
+    # for item in playlists:
+    #     response = youtube.eliminar_playlist(youtube_api, id_playlist=item["id"])
+    #     current_app.logger.info(f"Playlist {item["nombre"]} eliminada - {response}")
     youtube_api: "YouTubeResource" = youtube.autenticar_youtube()
 
     current_app.logger.info("La Autenticacion del api de youtube fue exitosa")
     
     token = session.get("spotify_token")
+    playlists_sp = spotify.obtener_playlist_usuario(token=token)
+    playlists_yt = youtube.listar_playlist(youtube_api, True, True)
 
-    playlists = spotify.obtener_playlist_usuario(token)
+    for k, v in playlists_sp.items():
+        # crear playlist si no existe
 
-    for k, v in playlists.items():
-        print(f"k: {k}, v: {v}")
-
+        if not (k in playlists_yt):
+            current_app.logger.info(f"Creando plalist {k}")
+            playlists_yt = youtube.crear_playlist(youtube_api, nombre_playlist=k)
+            current_app.logger.info(f"Playlist {k} creada - id: {playlists_yt['snippet'].get('title', None)}")
+            
+    
     # track = {
     #     'name': "\\\\\\",
     #     'artist': "c678924"
     # }
     # response = youtube.buscar_en_youtube(track, youtube_api)
 
-    return jsonify({'songs': playlists})
+    return jsonify({'songs': youtube.listar_playlist(youtube_api, True, True)})
     
 @endpoints_bp.route('/end1')
 def end1():

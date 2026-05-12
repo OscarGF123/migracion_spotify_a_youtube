@@ -54,8 +54,57 @@ class Youtube:
 
         return response
 
-    
-    def insertar_cancion(self, youtube_api: "YouTubeResource"):
+    def listar_playlist(self, youtube_api_key: "YouTubeResource", listar_nombres=None, listar_id=None):
+        page_token = True
+        plalists = []
+        while page_token:
+            request = youtube_api_key.playlists().list(
+                part='snippet',
+                mine=True,
+                pageToken= '' if page_token == True else page_token
+            )
+
+            response = request.execute()
+            plalists.extend(response.get('items'))
+            page_token = response.get("nextPageToken")
+
+        if listar_nombres and listar_id:
+            nombres = []
+            for item in plalists:
+                nombres.append({
+                        "nombre": item['snippet'].get('title', None),
+                        "id" : item['id']
+                })
+            return nombres
+        elif listar_nombres and not listar_id:
+            nombres = []
+            for item in plalists:
+                nombres.append(item['snippet'].get('title', None))
+        return response
+
+    def crear_playlist(self, youtube_api_key: "YouTubeResource", nombre_playlist: str):
+        request = youtube_api_key.playlists().insert(
+            part='snippet',
+            body={
+                'snippet':{
+                    'title': nombre_playlist
+                }
+            }
+        )
+        response = request.execute()
+
+        return response
+        pass
+
+    def eliminar_playlist(self, youtube_api_key: "YouTubeResource", id_playlist: str):
+        request = youtube_api_key.playlists().delete(
+            id=id_playlist
+        )
+        return request.execute()
+
+    def insertar_cancion(self, youtube_api: "YouTubeResource"): 
+
+        
         if not youtube_api:
             return None
         request: "YouTubeResource" = youtube_api.playlistItems().insert(
