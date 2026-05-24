@@ -17,7 +17,6 @@ class Spotify:
     accounts_url = "https://accounts.spotify.com"
     client_id = "c76620898070401581ce714613e607e1"
     redirect_url = "http://127.0.0.1:5000/callback"
-    user_id = "6ix2y1slrp76l5d118hf05pqp"
     
     def encriptar_sha256(self,code_verifier: str):
         # ✅ .digest() retorna bytes crudos, NO texto hexadecimal

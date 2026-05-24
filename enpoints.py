@@ -85,20 +85,26 @@ def iniciar_migraciones():
     #     current_app.logger.info(f"Playlist {item["nombre"]} eliminada - {response}")
     youtube_api: "YouTubeResource" = youtube.autenticar_youtube()
 
-    current_app.logger.info("La Autenticacion del api de youtube fue exitosa")
+    current_app.logger.debug("La Autenticacion del api de youtube fue exitosa")
     
     token = session.get("spotify_token")
     playlists_sp = spotify.obtener_playlist_usuario(token=token)
-    playlists_yt = youtube.listar_playlist(youtube_api, True, True)
+    playlists_yt = {i['nombre']: i['id'] for i in youtube.listar_playlist(youtube_api, listar_nombres=True)}
 
     for k, v in playlists_sp.items():
+        print (f"k: {k}")
         # crear playlist si no existe
-
         if not (k in playlists_yt):
             current_app.logger.info(f"Creando plalist {k}")
             playlists_yt = youtube.crear_playlist(youtube_api, nombre_playlist=k)
             current_app.logger.info(f"Playlist {k} creada - id: {playlists_yt['snippet'].get('title', None)}")
-            
+        
+        # Obtener canciones de la playlist
+        current_app.logger.info(f"Obteniendo las canciones de la playlist {k} de spotify")
+        items = spotify.obtener_items_playlist(token=token, playlist_id=playlists_sp[k]['id'])
+
+
+        
     
     # track = {
     #     'name': "\\\\\\",
@@ -106,7 +112,7 @@ def iniciar_migraciones():
     # }
     # response = youtube.buscar_en_youtube(track, youtube_api)
 
-    return jsonify({'songs': youtube.listar_playlist(youtube_api, True, True)})
+    return jsonify({'songs': items})
     
 @endpoints_bp.route('/end1')
 def end1():

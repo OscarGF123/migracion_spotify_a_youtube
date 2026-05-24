@@ -54,7 +54,7 @@ class Youtube:
 
         return response
 
-    def listar_playlist(self, youtube_api_key: "YouTubeResource", listar_nombres=None, listar_id=None):
+    def listar_playlist(self, youtube_api_key: "YouTubeResource", listar_nombres=None):
         page_token = True
         plalists = []
         while page_token:
@@ -68,7 +68,7 @@ class Youtube:
             plalists.extend(response.get('items'))
             page_token = response.get("nextPageToken")
 
-        if listar_nombres and listar_id:
+        if listar_nombres:
             nombres = []
             for item in plalists:
                 nombres.append({
@@ -76,10 +76,6 @@ class Youtube:
                         "id" : item['id']
                 })
             return nombres
-        elif listar_nombres and not listar_id:
-            nombres = []
-            for item in plalists:
-                nombres.append(item['snippet'].get('title', None))
         return response
 
     def crear_playlist(self, youtube_api_key: "YouTubeResource", nombre_playlist: str):
